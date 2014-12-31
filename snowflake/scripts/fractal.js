@@ -9,27 +9,28 @@ define(["util","entity","highland"],function(utils, entities, hl){
 	
 	function LineTree(depth, line){
 		console.log(line);
-		var root, iterator;
+		var root, tree;
+		tree = this;
 		root = new LineLink(depth,line);
-		iterator = root;
-		this.iterator = iterator;
+		this.iterator = root;
 		
 		//TODO: if root depth = 0, set parent of root to itself. so recursion won't crash.
 		if(!depth) root.parent = root;
 		
 		function LineLink(depth,line,parent){
-			console.log("creating line link");
+			//console.log("creating line link");
 			this.depth = depth;
 			this.line = line;
 			this.parent = parent;
 			this.itChild = 0;
-			if(depth) this.child = new LineLink(depth -1, line,this ); //Create a child for each depth. child will be reused.
+			if(depth) this.child = new LineLink(depth -1,new entities.Line(line.pos,line.vec),this ); //Create a child for each depth. child will be reused.
 		}
 		//Returns the next line segment.
 		LineLink.prototype.getNextLine = function(){
+			//console.log("depth: ",this.depth);
 			if(this.depth === 0){ //this line is a segment.
 				//Set the iterator to the parent.
-				iterator = this.parent;
+				tree.iterator = this.parent;
 				return this.line;				
 			}else{//this is not a line segment
 				//how many children do we have?
@@ -37,37 +38,38 @@ define(["util","entity","highland"],function(utils, entities, hl){
 					case 0:	//children are created on initialization. adjust them accordingly.
 						//Set up the line values for the first part.
 						this.child.parent = this; 
-						console.log("this line premod: ",this.line.toString());
+						//console.log("this line premod: ",this.line.toString());
 						this.child.line.setValues(this.line.pos,this.line.vec);
-						console.log("child line premod: ",this.child.line.toString());
+						//console.log("child line premod: ",this.child.line.toString());
 						this.child.line.vec.divide(3);
-						console.log("this line postmod: ",this.line.toString());
-						console.log("child line postmod: ",this.child.line.toString());
+						//console.log("this line postmod: ",this.line.toString());
+						//console.log("child line postmod: ",this.child.line.toString());
 						this.itChild = 1; //Increase the child iterator.
-						iterator = this.child;//Call getNextLine on the child.
-						return iterator.getNextLine(); //going deeper :D
+						tree.iterator = this.child;//Call getNextLine on the child.
+						return tree.iterator.getNextLine(); //going deeper :D
 					case 1://Change the line of the child to match the second part. Changing it to save on memory consumption.
 						this.child.line.pos = this.child.line.pos.translate(this.child.line.vec);
 						this.child.line.vec = this.child.line.vec.rotate(-fracAngle); // __/
 						this.itChild = 2; //Increase the child iterator.
-						iterator = this.child; //Call getNextLine on the child.
-						return iterator.getNextLine(); //going deeper :D
+						tree.iterator = this.child; //Call getNextLine on the child.
+						return tree.iterator.getNextLine(); //going deeper :D
 					case 2://Change the line of the child to match the third part. Changing it to save on memory consumption.
 						this.child.line.pos = this.child.line.pos.translate(this.child.line.vec);
 						this.child.line.vec = this.child.line.vec.rotate(2*fracAngle); // __/
 						this.itChild = 3; //Increase the child iterator.
-						iterator = this.child; //Call getNextLine on the child.
-						return iterator.getNextLine(); //going deeper :D
+						tree.iterator = this.child; //Call getNextLine on the child.
+						return tree.iterator.getNextLine(); //going deeper :D
 					case 3://Change the line of the child to match the fourth part. Changing it to save on memory consumption.
 						this.child.line.pos = this.child.line.pos.translate(this.child.line.vec);
 						this.child.line.vec = this.child.line.vec.rotate(-fracAngle); // __/
 						this.itChild = 4; //Increase the child iterator.
-						iterator = this.child; //Call getNextLine on the child.
-						return iterator.getNextLine(); //going deeper :D
+						tree.iterator = this.child; //Call getNextLine on the child.
+						return tree.iterator.getNextLine(); //going deeper :D
 					case 4://No more line parts.
 						if(this === root) return undefined; //we are done, no lines to return.
-						iterator = this.parent; //continue with the parent.
-						return iterator.getNextLine(); //going up :D
+						this.itChild = 0;
+						tree.iterator = this.parent; //continue with the parent.
+						return tree.iterator.getNextLine(); //going up :D
 					default:
 						console.log("shouldn't happen");
 				}			
@@ -116,23 +118,23 @@ define(["util","entity","highland"],function(utils, entities, hl){
 		console.log("getFractalStream");
 		var i, angle, sides, pos, vec, line,lineLinkTree;
 		i = 0;
-		sides = 1
+		sides = 3;
 		angle = 360.0/sides;
-		pos = new entities.Vector(100,50);
-		vec = new entities.Vector(50,0);
+		pos = new entities.Vector(200,200);
+		vec = new entities.Vector(500,0);
 		
 		//setup the lineLinkTree. This will enable us to keep an iterator on the fractal.
 		lineLinkTree = new LineTree(depth,new entities.Line(pos,vec));
 		
 		function generateFractal(push,next){
-			console.log("generate fractal");
 			line = lineLinkTree.iterator.getNextLine();
+			//console.log("line: ", line);
 			if(line === undefined){
 				i+=1;
 				if(i === sides){
 					push(null, 'end'); //our own end signal.
 					push(null, hl.nil); //end signal to end the stream.
-					console.log(lineLinkTree);
+					//console.log(lineLinkTree);
 				}else{		
 					pos.translate(vec);
 					vec.rotate(angle);

@@ -61,8 +61,11 @@ define(["lodash"],function(_){
 		//TODO: make this also possibly for a line argument. and make a similar function for Vector.
 		this.pos.x = pos.x;
 		this.pos.y = pos.y;
-		this.vec.x = pos.x;
-		this.vec.y = pos.y;
+		this.vec.x = vec.x;
+		this.vec.y = vec.y;
+	}
+	Line.prototype.toString = function(){
+		return "pos: "+ this.pos.x + " " + this.pos.y + " vec: " + this.vec.x + " " + this.vec.y;
 	}
 	//END OF LINE//
 	

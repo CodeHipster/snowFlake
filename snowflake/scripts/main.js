@@ -12,12 +12,12 @@ require(["util","fractal","highland"], function(utils, fractal, hl)
 {
 	console.log("running require in main.js");
 	var fractalStream, context
-	fractalStream = fractal.getFractalStream(1);
+	fractalStream = fractal.getFractalStream(10);
 	console.log(fractalStream);
 	init();
 	
-	//streamFractal2();
-	streamFractal1();
+	streamFractal2();
+	//streamFractal1();
 		
 	function streamFractal1(){
 		//implement timing to give dom time to render.
@@ -29,7 +29,7 @@ require(["util","fractal","highland"], function(utils, fractal, hl)
 		var lastFrameTime
 		
 		context.beginPath();
-		fractalStream.each(fractalStreamListener); //each just hijacks the thread...
+		fractalStream.each(fractalStreamListener);
 		
 		function fractalStreamListener(line){
 			if(drawCount < 1){ 
@@ -81,7 +81,7 @@ require(["util","fractal","highland"], function(utils, fractal, hl)
 			else{
 				drawsPerFrame *=0.95 //gear down
 			}
-			console.log(drawsPerFrame, lastFrameTime);
+			//console.log(drawsPerFrame, lastFrameTime);
 			drawCount = drawsPerFrame;
 			while(drawCount > 1){
 				fractalStream.pull(function(err,x){
