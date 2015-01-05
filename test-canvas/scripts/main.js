@@ -20,6 +20,7 @@ require(["util"],function(utils){
 		var i = 0;
 		var desiredFrameLength = 200; //ms
 		var drawsPerFrame = 1;	
+		var drawsPerSecond = 0;
 		var drawCount = 0;
 		var prev = 0;
 		var lastFrameTime	
@@ -29,18 +30,13 @@ require(["util"],function(utils){
 		window.requestAnimationFrame(drawLines);
 		
 		function drawLines(timeStamp){
-			lastFrameTime = timeStamp-prev;
+			context.beginPath();
+			lastFrameTime = timeStamp - prev;
 			prev = timeStamp;
-			if (lastFrameTime < desiredFrameLength)
-			{
-				drawsPerFrame *=1.2 //gear up
-			}
-			else{
-				drawsPerFrame *=0.95 //gear down
-			}
-			drawCount = drawsPerFrame;
+			drawCount = 100000;
 			draws += drawCount;
-			console.log(drawsPerFrame, lastFrameTime, draws);
+			drawsPerSecond = drawCount/(lastFrameTime/1000);
+			console.log(draws, drawsPerSecond);
 			while(drawCount > 1){
 				drawLine(nextLine());
 				
