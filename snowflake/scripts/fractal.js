@@ -1,24 +1,30 @@
-//todo: fix line creating.
+//		__/\__
+//	  _/      \_
+//	 |			|
+//	/	         \
+//	\	         /
+//	 |_	       _|
+//	   \__  __/
+//		  \/ 
+//
 
 console.log("fractal.js");
 
 define(["util","entity","highland"],function(utils, entities, hl){
 	console.log("running define in fractal.js");	
 
-	var fracAngle = 60;
+	var fracAngle = 60; //3 lines initially /_\
 	
+	//depth should be > 0.
 	function LineTree(depth, line){
-		console.log(line);
+		console.log("Constructing LineTree");
 		var root, tree;
 		tree = this;
 		root = new LineLink(depth,line);
 		this.iterator = root;
 		
-		//TODO: if root depth = 0, set parent of root to itself. so recursion won't crash.
-		if(!depth) root.parent = root;
-		
+		//LineLinks are the nodes of the tree. And contain a line.
 		function LineLink(depth,line,parent){
-			//console.log("creating line link");
 			this.depth = depth;
 			this.line = line;
 			this.parent = parent;
@@ -27,7 +33,6 @@ define(["util","entity","highland"],function(utils, entities, hl){
 		}
 		//Returns the next line segment.
 		LineLink.prototype.getNextLine = function(){
-			//console.log("depth: ",this.depth);
 			if(this.depth === 0){ //this line is a segment.
 				//Set the iterator to the parent.
 				tree.iterator = this.parent;
@@ -83,20 +88,11 @@ define(["util","entity","highland"],function(utils, entities, hl){
 		function p(pos,vec){
 			pushLineToStream(depth-1, pos, vec, push);
 		}
-		
-		//If we have reached the final depth push the line to the stream.
-		if(depth === 0) push(null, new entities.Line(position,vector));
+		if(depth === 0) 
+			//If we have reached the final depth push the line to the stream.
+			push(null, new entities.Line(position,vector));
 		else{
 			//Cut the line into 4 pieces and toss them into back into this function with 1 less depth.
-			//		__/\__
-			//	  _/      \_
-			//	 |			|
-			//	/	         \
-			//	\	         /
-			//	 |_	       _|
-			//	   \__  __/
-			//		  \/ 
-			//
 			var pos, vec;
 			pos = new entities.Vector(position);
 			vec = new entities.Vector(vector).divide(3); // __/\__ 
@@ -113,38 +109,40 @@ define(["util","entity","highland"],function(utils, entities, hl){
 		}
 	}
 	
+	
 	function getFractalStream(depth){
-		
-		console.log("getFractalStream");
+		console.log("getting a fractalStream.");
+		//Declare all used variables.
 		var i, angle, sides, pos, vec, line,lineLinkTree;
 		i = 0;
 		sides = 3;
 		angle = 360.0/sides;
+		//TODO: make this modifiable on the html page.
 		pos = new entities.Vector(200,200);
 		vec = new entities.Vector(500,0);
 		
-		//setup the lineLinkTree. This will enable us to keep an iterator on the fractal.
+		//setup the LineTree. This will enable us to keep an iterator on the fractal.
 		lineLinkTree = new LineTree(depth,new entities.Line(pos,vec));
 		
+		//Generator function to be used in the stream. Will be called each time something is pulled from the stream. 
 		function generateFractal(push,next){
 			line = lineLinkTree.iterator.getNextLine();
-			//console.log("line: ", line);
 			if(line === undefined){
 				i+=1;
 				if(i === sides){
 					push(null, 'end'); //our own end signal.
 					push(null, hl.nil); //end signal to end the stream.
-					//console.log(lineLinkTree);
 				}else{		
-					pos.translate(vec);
+					// modify pos and vec to be the new Line (move and rotate).
+					pos.translate(vec); 
 					vec.rotate(angle);
 					lineLinkTree = new LineTree(depth,new entities.Line(pos,vec));
-					push(null,lineLinkTree.iterator.getNextLine());
+					//Apparently no need to push for each call to the generator function. If nothing is pushed the function on the other side won't be called.
 				}
 			}else push(null,line);
 			next();
 		}
-		return hl(generateFractal).map(function(x){return x}); //map makes sure backpressure is not build up :)
+		return hl(generateFractal);//.map(function(x){return x}); //map makes sure backpressure is not build up :)
 	}
 
 	return {
