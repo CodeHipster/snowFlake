@@ -33,7 +33,6 @@ require(["util","fractal","highland"], function(utils, fractal, hl)
 		// Calculate number of lines to draw depending on computer speed.
 		function calculateDrawCount(timeStamp){	
 			lastFrameTime = timeStamp-prev;
-			console.log("lines per second: ", drawsPerFrame/(lastFrameTime/1000));
 			prev = timeStamp;
 			if (lastFrameTime < desiredFrameLength)
 			{
@@ -45,9 +44,32 @@ require(["util","fractal","highland"], function(utils, fractal, hl)
 			drawCount = drawsPerFrame;		
 		}
 		
+		// Calculate lines per second. Each second.
+		//Using vars from calculating draw count
+		var timeElapsed = 0;
+		var lines = 0;
+		function calculateLPS(){
+			lines += drawsPerFrame;
+			timeElapsed += lastFrameTime;
+			if (timeElapsed > 1000)
+			{
+				//draw a white square.
+				context.fillStyle="#ffffff";
+				context.fillRect(20,4,250,20);
+				context.stroke();
+				//draw the lps text.
+				context.fillStyle = "#000000";
+				context.fillText((lines/timeElapsed).toFixed(0) + " x1000 lines per second.",20,20);
+				context.stroke();
+				lines = 0;
+				timeElapsed = 0;
+			}
+		}
+		
 		//Function to be called when values are received from the stream.
 		function pullStream(timeStamp){
 			context.beginPath(); // Calling this clears the internal path stored in the context.
+			calculateLPS(); // Lines per second.
 			calculateDrawCount(timeStamp);
 			while(drawCount > 1){
 				fractalStream.pull(function(err,x){
@@ -92,6 +114,7 @@ require(["util","fractal","highland"], function(utils, fractal, hl)
 			context = canvas.getContext('2d');
 			context.fillStyle   = '#000';
 			context.lineWidth   = 1;
+			context.font = "16px Arial";
 		}else 
 		{
 			throw new Error("canvas context unavailable");
