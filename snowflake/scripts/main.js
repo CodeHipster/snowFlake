@@ -12,68 +12,25 @@ require(["util","fractal","highland"], function(utils, fractal, hl)
 {
 	console.log("running require in main.js");
 	var fractalStream, context
-	fractalStream = fractal.getFractalStream(12);
+	fractalStream = fractal.getFractalStream(11);
 	console.log(fractalStream);
 	init();
 	
-	streamFractal2();
-	//streamFractal1();
-		
-	function streamFractal1(){
-		//implement timing to give dom time to render.
-		var i = 0;
-		var desiredFrameLength = 20; //ms
-		var drawsPerFrame = 1;
-		var drawCount = 0;
-		var prev = window.performance.now();
-		var lastFrameTime
-		
-		fractalStream.each(fractalStreamListener);
-		
-		function fractalStreamListener(line){
-			context.beginPath();
-			if(drawCount < 1){ 
-				//draw.
-				//timeOut to update canvas.
-				context.stroke();
-				window.setTimeout(function(){fractalStream.resume();},0);
-				// window.requestAnimationFrame(function(timeStamp){
-					// context.stroke();
-					// console.log(timeStamp);
-					// fractalStream.resume();					
-				// });
-				//recalculate amount of draws.
-				timeStamp = window.performance.now();
-				lastFrameTime = timeStamp-prev;
-				prev = timeStamp;
-				if (lastFrameTime < desiredFrameLength) drawsPerFrame *=1.2 //gear up
-				else drawsPerFrame *=0.95 //gear down
-				drawCount = drawsPerFrame;
-			}
-			
-			if(line !== 'end')drawLine(line);
-			else context.stroke();
-			
-			drawCount -= 1;
-		}
-	}
+	streamFractal();
 	
-	//pull still causes memory to fill up like mad.
-	function streamFractal2(){
+	function streamFractal(){
 		//implement timing to give dom time to render.
-		var i = 0;
 		var desiredFrameLength = 35; //ms
 		var drawsPerFrame = 1;	
 		var drawCount = 0;
 		var prev = 0;
-		var lastFrameTime	
+		var lastFrameTime = 0;
 		var again = true;
 		
+		// Do animation logic when the browser is ready.
 		window.requestAnimationFrame(pullStream);
 		
-		function pullStream(timeStamp){
-		
-			context.beginPath();
+		function calculateDrawCount(timeStamp){	
 			lastFrameTime = timeStamp-prev;
 			console.log("lines per second: ", drawsPerFrame/(lastFrameTime/1000));
 			prev = timeStamp;
@@ -84,7 +41,12 @@ require(["util","fractal","highland"], function(utils, fractal, hl)
 			else{
 				drawsPerFrame *=0.95 //gear down
 			}
-			drawCount = drawsPerFrame;
+			drawCount = drawsPerFrame;		
+		}
+		
+		function pullStream(timeStamp){
+			context.beginPath(); // Calling this clears the internal path stored in the context.
+			calculateDrawCount(timeStamp);
 			while(drawCount > 1){
 				fractalStream.pull(function(err,x){
 					if(x === 'end'){
