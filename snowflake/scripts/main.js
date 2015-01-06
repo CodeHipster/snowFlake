@@ -4,16 +4,17 @@ require.config({
   paths: {
     // set the lodash path
     lodash: 'lib/lodash',
-	highland: 'lib/highland'
+	highland: 'lib/highland',
+	jquery: 'lib/jquery'
   }
 });
 
-require(["util","fractal","highland"], function(utils, fractal, hl)
+require(["util","fractal","highland","jquery"], function(utils, fractal, hl, jquery)
 {
 	console.log("running require in main.js");
-	var fractalStream, context
-	fractalStream = fractal.getFractalStream(12); //12 iterations deep.
-	console.log(fractalStream);
+	var fractalStream, context;
+	var depth, xPos, yPos, length;
+	fractalStream = fractal.getFractalStream(depth); //12 iterations deep.
 	init();
 	
 	streamFractal();
@@ -108,6 +109,10 @@ require(["util","fractal","highland"], function(utils, fractal, hl)
 		
 		utils.unloadScrollBars();
 		
+		//link the input fields.
+		jquery("#depth").change(function(data, handler){
+			console.log("depth changed");
+		});
 		
 		if( canvas.getContext )
 		{
