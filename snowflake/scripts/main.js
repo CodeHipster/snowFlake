@@ -9,7 +9,8 @@ require.config({
 });
 
 require(["util", "fractal", "highland"], function (utils, fractal, hl) {
-	var fractalStream, context
+	var fractalStream, context, nrFormat;
+	nrFormat = new Intl.NumberFormat('en-US')
 
 	init();
 
@@ -24,13 +25,14 @@ require(["util", "fractal", "highland"], function (utils, fractal, hl) {
 		var lastFrameTime = 0;
 		var again = true;
 		var linesDrawn = 0;
+		var linesPerSecond = 0;
 
 		// Do animation logic when the browser is ready.
 		window.requestAnimationFrame(pullStream);
 
 		function calculateDrawCount(timeStamp) {
 			lastFrameTime = timeStamp - prev;
-			console.log("Drawing speed: ", drawsPerFrame / (lastFrameTime / 1000) + " lines per second.");
+			linesPerSecond = drawsPerFrame / (lastFrameTime / 1000);
 			prev = timeStamp;
 			if (lastFrameTime < desiredFrameLength) {
 				drawsPerFrame *= 1.2 //gear up
@@ -45,6 +47,7 @@ require(["util", "fractal", "highland"], function (utils, fractal, hl) {
 			//timeStamp is in milliseconds
 			context.beginPath(); // Calling this clears the internal path stored in the context.
 			calculateDrawCount(timeStamp);
+			drawStatistics(linesDrawn, linesPerSecond)
 			console.log("lines drawn: " + linesDrawn);
 			while (drawCount > 1) {
 				fractalStream.pull(function (err, x) {
@@ -61,6 +64,20 @@ require(["util", "fractal", "highland"], function (utils, fractal, hl) {
 			context.stroke();
 			if (again) window.requestAnimationFrame(pullStream);
 		}
+	}
+
+	// draw total lines and lines per second.
+	function drawStatistics(totalLines, linesPerSecond) {
+		//draw a white square.
+		context.fillStyle = "#ffffff";
+		context.fillRect(20, 4, 250, 30);
+		//draw the lps text.
+		context.fillStyle = "#000000";
+		context.fillText(nrFormat.format(linesPerSecond.toFixed(0)) + " lines per second.", 20, 20);
+		context.fillText(nrFormat.format(totalLines) + " lines drawn in total.", 20, 30);
+		context.stroke();
+		lines = 0;
+		timeElapsed = 0;
 	}
 
 	function drawLine(line) {
