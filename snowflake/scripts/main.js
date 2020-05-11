@@ -1,96 +1,87 @@
 console.log("main.js");
 
 require.config({
-  paths: {
-    // set the lodash path
-    lodash: 'lib/lodash',
-	highland: 'lib/highland',
-	jquery: 'lib/jquery'
-  }
+	paths: {
+		// set the lodash path
+		lodash: 'lib/lodash',
+		highland: 'lib/highland'
+	}
 });
 
-require(["util","fractal","highland","jquery"], function(utils, fractal, hl, jquery)
-{
-	console.log("running require in main.js");
-	var fractalStream, context;
-	var depth, xPos, yPos, length;
-	fractalStream = fractal.getFractalStream(depth); //12 iterations deep.
+require(["util", "fractal", "highland"], function (utils, fractal, hl) {
+	var fractalStream, context, nrFormat;
+	nrFormat = new Intl.NumberFormat('en-US')
+
 	init();
-	
+
 	streamFractal();
-	
-	function streamFractal(){
+
+	function streamFractal() {
 		//implement timing to give dom time to render.
-		var desiredFrameLength = 35; //30fps
-		var drawsPerFrame = 1;	
-		var drawCount = 0;
-		var prev = 0;
+		var desiredFrameLength = 35; //ms = +-28fps
+		var drawsPerFrame = 1;
+		var drawCount = 0; //Amount of lines draw per animation frame
+		var prev = 0; //Previous animation timestamp
 		var lastFrameTime = 0;
 		var again = true;
-		
-		// Does animation logic when the browser is ready.
+		var linesDrawn = 0;
+		var linesPerSecond = 0;
+
+		// Do animation logic when the browser is ready.
 		window.requestAnimationFrame(pullStream);
-		
-		// Calculate number of lines to draw depending on computer speed.
-		function calculateDrawCount(timeStamp){	
-			lastFrameTime = timeStamp-prev;
+
+		function calculateDrawCount(timeStamp) {
+			lastFrameTime = timeStamp - prev;
+			linesPerSecond = drawsPerFrame / (lastFrameTime / 1000);
 			prev = timeStamp;
-			if (lastFrameTime < desiredFrameLength)
-			{
-				drawsPerFrame *=1.2 //gear up
+			if (lastFrameTime < desiredFrameLength) {
+				drawsPerFrame *= 1.2 //gear up
 			}
-			else{
-				drawsPerFrame *=0.95 //gear down
+			else {
+				drawsPerFrame *= 0.95 //gear down
 			}
-			drawCount = drawsPerFrame;		
+			drawCount = drawsPerFrame;
 		}
-		
-		// Calculate lines per second. Each second.
-		//Using vars from calculating draw count
-		var timeElapsed = 0;
-		var lines = 0;
-		function calculateLPS(){
-			lines += drawsPerFrame;
-			timeElapsed += lastFrameTime;
-			if (timeElapsed > 1000)
-			{
-				//draw a white square.
-				context.fillStyle="#ffffff";
-				context.fillRect(20,4,250,20);
-				context.stroke();
-				//draw the lps text.
-				context.fillStyle = "#000000";
-				context.fillText((lines/timeElapsed).toFixed(0) + " x1000 lines per second.",20,20);
-				context.stroke();
-				lines = 0;
-				timeElapsed = 0;
-			}
-		}
-		
-		//Function to be called when values are received from the stream.
-		function pullStream(timeStamp){
+
+		function pullStream(timeStamp) {
+			//timeStamp is in milliseconds
 			context.beginPath(); // Calling this clears the internal path stored in the context.
-			calculateLPS(); // Lines per second.
 			calculateDrawCount(timeStamp);
-			while(drawCount > 1){
-				fractalStream.pull(function(err,x){
-					if(x === 'end'){
+			drawStatistics(linesDrawn, linesPerSecond)
+			console.log("lines drawn: " + linesDrawn);
+			while (drawCount > 1) {
+				fractalStream.pull(function (err, x) {
+					if (x === 'end') {
 						drawCount = 0;
 						again = false;
-					}else{
+					} else {
 						drawLine(x);
+						linesDrawn += 1;
 					}
-				});	
+				});
 				drawCount -= 1;
 			}
 			context.stroke();
-			if(again) window.requestAnimationFrame(pullStream);
+			if (again) window.requestAnimationFrame(pullStream);
 		}
 	}
-	
-	//function to draw the line.
-	var x1, y1, x2, y2;
-	function drawLine(line){
+
+	// draw total lines and lines per second.
+	function drawStatistics(totalLines, linesPerSecond) {
+		//draw a white square.
+		context.fillStyle = "#ffffff";
+		context.fillRect(20, 4, 250, 30);
+		//draw the lps text.
+		context.fillStyle = "#000000";
+		context.fillText(nrFormat.format(linesPerSecond.toFixed(0)) + " lines per second.", 20, 20);
+		context.fillText(nrFormat.format(totalLines) + " lines drawn in total.", 20, 30);
+		context.stroke();
+		lines = 0;
+		timeElapsed = 0;
+	}
+
+	function drawLine(line) {
+		var x1, y1, x2, y2;
 		x1 = line.pos.x;
 		y1 = line.pos.y;
 		x2 = x1 + line.vec.x;
@@ -99,30 +90,23 @@ require(["util","fractal","highland","jquery"], function(utils, fractal, hl, jqu
 		context.lineTo(x2, y2);
 	}
 
-	//initialize the canvas.
-	function init(){
+	function init() {
 		console.log("init main");
 		canvas = document.getElementById("canvas");
 		//full screen.
 		canvas.width = window.innerWidth;
-		canvas.height = window.innerHeight; 
-		
+		canvas.height = window.innerHeight;
+
 		utils.unloadScrollBars();
-		
-		//link the input fields.
-		jquery("#depth").change(function(data, handler){
-			console.log("depth changed");
-		});
-		
-		if( canvas.getContext )
-		{
+
+		if (canvas.getContext) {
 			context = canvas.getContext('2d');
-			context.fillStyle   = '#000';
-			context.lineWidth   = 1;
-			context.font = "16px Arial";
-		}else 
-		{
+			context.fillStyle = '#000';
+			context.lineWidth = 1;
+		} else {
 			throw new Error("canvas context unavailable");
 		}
+
+		fractalStream = fractal.getFractalStream(11, canvas.width, canvas.height);
 	}
 });
