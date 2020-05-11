@@ -78,8 +78,10 @@ define(["util", "entity", "highland"], function (utils, entities, hl) {
 		i = 0;
 		sides = 3;
 		angle = 360.0 / sides;
-		pos = new entities.Vector(200, 200);
-		vec = new entities.Vector(500, 0);
+		smallestSide = Math.min(width, height);
+		baseLineLength = smallestSide * (7/8)
+		pos = new entities.Vector((smallestSide / 8) + 10, (smallestSide / 8) + 10);
+		vec = new entities.Vector(baseLineLength, 0).rotate(15);
 
 		lineLinkTree = new LineTree(depth, new entities.Line(pos, vec));
 
